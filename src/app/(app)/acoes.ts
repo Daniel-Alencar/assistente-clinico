@@ -251,3 +251,11 @@ export async function alterarStatusConsulta(consultaId: string, status: (typeof 
   await supabase.from("consultas").update({ status }).eq("id", consultaId);
   revalidatePath("/agenda");
 }
+
+// ---------------------------------------------------------------- Sessão
+
+export async function sair() {
+  const supabase = await criarClienteServidor();
+  await supabase.auth.signOut();
+  redirect("/login");
+}

@@ -9,22 +9,24 @@ type Props = {
   pacientes: { id: string; nome: string }[];
   valorPadrao: number | null;
   hoje: string; // yyyy-mm-dd no fuso do profissional
+  aoSalvar?: () => void;
 };
 
-export function FormularioConsulta({ pacientes, valorPadrao, hoje }: Props) {
+export function FormularioConsulta({ pacientes, valorPadrao, hoje, aoSalvar }: Props) {
   const [estado, acao, pendente] = useActionState(criarConsulta, {});
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    if (estado.ok) ref.current?.reset();
-  }, [estado]);
+    if (!estado.ok) return;
+    ref.current?.reset();
+    aoSalvar?.();
+  }, [estado, aoSalvar]);
 
   if (!pacientes.length) {
     return <p className="text-stone-600">Cadastre um paciente para começar a agendar.</p>;
   }
 
   return (
-    <form ref={ref} action={acao} className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white shadow-sm p-4">
-      <h2 className="font-semibold">Nova consulta</h2>
+    <form ref={ref} action={acao} className="flex flex-col gap-4">
       <label className={rotulo}>
         Paciente
         <select name="paciente_id" required className={campo}>

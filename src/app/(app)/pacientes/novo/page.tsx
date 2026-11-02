@@ -1,10 +1,23 @@
+import Link from "next/link";
+import { cartao } from "@/components/estilos";
+import { CabecalhoPagina } from "@/components/ui";
 import { FormularioPaciente } from "../formulario-paciente";
 
 export default function NovoPaciente() {
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight">Novo paciente</h1>
-      <FormularioPaciente />
-    </section>
+    <>
+      <CabecalhoPagina
+        titulo="Novo paciente"
+        descricao="Só o nome é obrigatório. Os demais dados podem ser completados depois."
+        antes={
+          <Link href="/pacientes" className="text-sm text-stone-500 hover:text-marca">
+            ← Pacientes
+          </Link>
+        }
+      />
+      <div className={`${cartao} max-w-2xl p-6`}>
+        <FormularioPaciente />
+      </div>
+    </>
   );
 }

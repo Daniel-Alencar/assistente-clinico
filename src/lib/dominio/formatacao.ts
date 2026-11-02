@@ -81,3 +81,11 @@ export function utcParaHorarioLocal(iso: string, fusoHorario: string) {
   );
   return { data: `${partes.year}-${partes.month}-${partes.day}`, hora: `${partes.hour}:${partes.minute}` };
 }
+
+/** Idade em anos completos a partir de "yyyy-mm-dd". */
+export function calcularIdade(dataNascimento: string, hoje = new Date()): number {
+  const [a, m, d] = dataNascimento.split("-").map(Number);
+  let idade = hoje.getFullYear() - a;
+  if (hoje.getMonth() + 1 < m || (hoje.getMonth() + 1 === m && hoje.getDate() < d)) idade--;
+  return idade;
+}

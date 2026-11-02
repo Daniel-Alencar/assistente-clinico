@@ -1,47 +1,66 @@
 import Link from "next/link";
-import { botaoPrimario } from "@/components/estilos";
-import { formatarTelefone } from "@/lib/dominio/formatacao";
+import { botaoFantasma, botaoPrimario } from "@/components/estilos";
+import { IconeMais } from "@/components/icones";
+import { CabecalhoPagina } from "@/components/ui";
+import { calcularIdade, formatarTelefone } from "@/lib/dominio/formatacao";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
+import { ListaPacientes } from "./lista-pacientes";
 
 type Props = { searchParams: Promise<{ inativos?: string }> };
 
 export default async function Pacientes({ searchParams }: Props) {
   const mostrarInativos = (await searchParams).inativos === "1";
   const supabase = await criarClienteServidor();
-  const { data: pacientes } = await supabase
-    .from("pacientes")
-    .select("id, nome, telefone_whatsapp, aceita_whatsapp, ativo")
-    .eq("ativo", !mostrarInativos)
-    .order("nome");
+  const [{ data: pacientes }, { data: proximas }, { data: perfil }] = await Promise.all([
+    supabase
+      .from("pacientes")
+      .select("id, nome, telefone_whatsapp, aceita_whatsapp, data_nascimento")
+      .eq("ativo", !mostrarInativos)
+      .order("nome"),
+    supabase
+      .from("consultas")
+      .select("paciente_id, inicio")
+      .in("status", ["agendada", "confirmada"])
+      .gte("inicio", new Date().toISOString())
+      .order("inicio"),
+    supabase.from("profissionais").select("fuso_horario").single(),
+  ]);
+  const fuso = perfil?.fuso_horario ?? "America/Sao_Paulo";
+
+  const proximaPorPaciente = new Map<string, string>();
+  for (const c of proximas ?? []) if (!proximaPorPaciente.has(c.paciente_id)) proximaPorPaciente.set(c.paciente_id, c.inicio);
+
+  const itens = (pacientes ?? []).map((p) => {
+    const proxima = proximaPorPaciente.get(p.id);
+    return {
+      id: p.id,
+      nome: p.nome,
+      idade: p.data_nascimento ? `${calcularIdade(p.data_nascimento)} anos` : null,
+      telefone: p.telefone_whatsapp ? formatarTelefone(p.telefone_whatsapp) : null,
+      aceitaWhatsapp: p.aceita_whatsapp,
+      proximaConsulta: proxima
+        ? new Date(proxima).toLocaleString("pt-BR", { timeZone: fuso, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+        : null,
+    };
+  });
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">{mostrarInativos ? "Pacientes inativos" : "Pacientes"}</h1>
-        <Link href="/pacientes/novo" className={botaoPrimario}>
-          Novo paciente
-        </Link>
-      </div>
-      {!pacientes?.length && <p className="text-stone-600">Nenhum paciente aqui.</p>}
-      <ul className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white shadow-sm">
-        {pacientes?.map((p) => (
-          <li key={p.id}>
-            <Link
-              href={`/pacientes/${p.id}`}
-              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-stone-50"
-            >
-              <span className="font-medium">{p.nome}</span>
-              <span className="text-right text-sm text-stone-600">
-                {p.telefone_whatsapp ? formatarTelefone(p.telefone_whatsapp) : "Sem WhatsApp"}
-                {p.telefone_whatsapp && !p.aceita_whatsapp && " · sem autorização"}
-              </span>
+    <>
+      <CabecalhoPagina
+        titulo={mostrarInativos ? "Pacientes inativos" : "Pacientes"}
+        descricao={mostrarInativos ? "Pacientes desativados continuam com o histórico guardado." : "Cadastro, histórico e acompanhamento de cada paciente."}
+        acoes={
+          <>
+            <Link href={mostrarInativos ? "/pacientes" : "/pacientes?inativos=1"} className={botaoFantasma}>
+              {mostrarInativos ? "Ver ativos" : "Ver inativos"}
             </Link>
-          </li>
-        ))}
-      </ul>
-      <Link href={mostrarInativos ? "/pacientes" : "/pacientes?inativos=1"} className="text-sm text-stone-600 underline">
-        {mostrarInativos ? "Ver pacientes ativos" : "Ver pacientes inativos"}
-      </Link>
-    </section>
+            <Link href="/pacientes/novo" className={botaoPrimario}>
+              <IconeMais className="size-4" /> Novo paciente
+            </Link>
+          </>
+        }
+      />
+      <ListaPacientes pacientes={itens} />
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cartao } from "@/components/estilos";
+import { CabecalhoPagina } from "@/components/ui";
 import type { Diagnostico } from "@/lib/ia/esquemas";
 import type { Mensagem } from "@/lib/ia/tipos";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
@@ -31,16 +32,21 @@ export default async function ApoioDiagnostico({ params, searchParams }: Props) 
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <Link href={`/pacientes/${paciente.id}`} className="text-sm text-stone-500 hover:text-marca">
-          ← {paciente.nome}
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Apoio ao diagnóstico</h1>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <div>
+        <CabecalhoPagina
+          titulo="Apoio ao diagnóstico"
+          descricao="Descreva o caso e refine as hipóteses respondendo às perguntas do assistente."
+          antes={
+            <Link href={`/pacientes/${paciente.id}`} className="text-sm text-stone-500 hover:text-marca">
+              ← {paciente.nome}
+            </Link>
+          }
+        />
+        <p className="-mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Ferramenta de apoio à decisão. As hipóteses são geradas por IA a partir do seu relato e não
           substituem a avaliação clínica: o diagnóstico é sempre seu. O nome do paciente não é enviado à IA.
         </p>
-      </header>
+      </div>
 
       <AssistenteDiagnostico
         key={atual?.id ?? "nova"}

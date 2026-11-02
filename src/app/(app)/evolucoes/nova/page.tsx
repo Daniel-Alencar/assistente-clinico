@@ -1,4 +1,5 @@
 import { criarClienteServidor } from "@/lib/supabase/servidor";
+import { CabecalhoPagina } from "@/components/ui";
 import { FormularioEvolucao } from "./formulario";
 
 type Props = { searchParams: Promise<{ paciente?: string; consulta?: string }> };
@@ -13,13 +14,12 @@ export default async function NovaEvolucao({ searchParams }: Props) {
     .order("nome");
 
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight">Nova evolução</h1>
-      <p className="text-stone-600">
-        Dite um resumo da sessão (use o microfone do teclado do celular). A IA organiza em uma
-        evolução estruturada para você revisar.
-      </p>
+    <>
+      <CabecalhoPagina
+        titulo="Nova evolução"
+        descricao="Dite um resumo da sessão pelo microfone do teclado do celular. A IA organiza o texto em uma evolução estruturada para você revisar."
+      />
       <FormularioEvolucao pacientes={pacientes ?? []} pacienteInicial={paciente} consultaId={consulta} />
-    </section>
+    </>
   );
 }
