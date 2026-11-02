@@ -55,6 +55,16 @@ export default async function Agenda() {
     .limit(200);
   const consultas = (data ?? []) as unknown as Consulta[];
 
+  // Respostas de pacientes que o robô não entendeu (encaminhadas também ao WhatsApp do profissional).
+  const { data: recados } = await supabase
+    .from("mensagens")
+    .select("id, conteudo, criado_em, paciente:pacientes(id, nome)")
+    .eq("direcao", "entrada")
+    .eq("tipo", "nao_reconhecida")
+    .gte("criado_em", desde)
+    .order("criado_em", { ascending: false })
+    .limit(5);
+
   const hoje = utcParaHorarioLocal(new Date().toISOString(), fuso).data;
   const porDia = new Map<string, Consulta[]>();
   for (const c of consultas) {
@@ -89,6 +99,31 @@ export default async function Agenda() {
         <Indicador rotulo="A cobrar" valor={aCobrar} detalhe="Realizadas sem Pix" />
         <Indicador rotulo="Recebido" valor={formatarMoeda(recebido)} detalhe="Últimos 7 dias" />
       </div>
+
+      {!!recados?.length && (
+        <section className={`${cartao} mb-10`}>
+          <h2 className="border-b border-stone-100 px-5 py-3.5 font-semibold">Mensagens de pacientes</h2>
+          <ul className="divide-y divide-stone-100">
+            {recados.map((r) => {
+              const p = r.paciente as unknown as { id: string; nome: string } | null;
+              return (
+                <li key={r.id} className="flex items-start gap-3 px-5 py-3">
+                  {p && <Avatar nome={p.nome} tamanho="sm" />}
+                  <div className="min-w-0 flex-1 text-sm">
+                    <p className="font-medium text-stone-900">
+                      {p?.nome ?? "Paciente"}{" "}
+                      <span className="font-normal text-stone-400">
+                        · {new Date(r.criado_em).toLocaleString("pt-BR", { timeZone: fuso, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </p>
+                    <p className="text-stone-600">{r.conteudo}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <div className="flex flex-col gap-8">
         {proximos.length === 0 && (
@@ -229,6 +264,9 @@ function LinhaConsulta({ consulta: c, fuso, valorPadrao }: { consulta: Consulta;
               Registrar evolução
             </Link>
           )}
+          <Link href={`/consultas/${c.id}`} className="rounded-lg px-3 py-2 text-sm hover:bg-stone-100">
+            Editar ou remarcar
+          </Link>
           {c.paciente && (
             <Link href={`/pacientes/${c.paciente.id}`} className="rounded-lg px-3 py-2 text-sm hover:bg-stone-100">
               Ver paciente

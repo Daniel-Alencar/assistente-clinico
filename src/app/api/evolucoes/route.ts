@@ -3,6 +3,7 @@ import { z } from "zod";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 import { respostaErroIa } from "@/lib/ia/erros-http";
 import { gerarEvolucao } from "@/lib/ia/evolucao";
+import { bloqueioDeEscrita, registrarAcesso, registrarUsoIa, verificarLimiteIa } from "@/lib/servidor";
 
 const Entrada = z.object({
   pacienteId: z.uuid(),
@@ -17,6 +18,9 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ erro: "Não autenticado" }, { status: 401 });
+
+  const bloqueio = (await bloqueioDeEscrita(supabase, user.id)) ?? (await verificarLimiteIa(supabase, user.id));
+  if (bloqueio) return NextResponse.json({ erro: bloqueio }, { status: 403 });
 
   const entrada = Entrada.safeParse(await req.json());
   if (!entrada.success) {
@@ -48,6 +52,14 @@ export async function POST(req: NextRequest) {
       .single();
     if (error) throw error;
 
+    await registrarUsoIa(supabase, user.id, "evolucao");
+    await registrarAcesso(supabase, {
+      profissionalId: user.id,
+      pacienteId: entrada.data.pacienteId,
+      recurso: "evolucao",
+      recursoId: data.id,
+      acao: "criar",
+    });
     return NextResponse.json(data, { status: 201 });
   } catch (erro) {
     return respostaErroIa(erro, "gerar evolução");

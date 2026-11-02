@@ -111,7 +111,15 @@ export default function Login() {
                 )}
               </form>
               <p className="text-xs text-stone-500">
-                Ao entrar, você concorda com os Termos de Uso e a Política de Privacidade.
+                Ao entrar, você concorda com os{" "}
+                <Link href="/termos" className="underline hover:text-stone-700">
+                  Termos de Uso
+                </Link>{" "}
+                e a{" "}
+                <Link href="/privacidade" className="underline hover:text-stone-700">
+                  Política de Privacidade
+                </Link>
+                .
               </p>
             </>
           )}

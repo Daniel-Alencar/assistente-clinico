@@ -54,6 +54,9 @@ export default async function Pacientes({ searchParams }: Props) {
             <Link href={mostrarInativos ? "/pacientes" : "/pacientes?inativos=1"} className={botaoFantasma}>
               {mostrarInativos ? "Ver ativos" : "Ver inativos"}
             </Link>
+            <Link href="/pacientes/importar" className={botaoFantasma}>
+              Importar
+            </Link>
             <Link href="/pacientes/novo" className={botaoPrimario}>
               <IconeMais className="size-4" /> Novo paciente
             </Link>

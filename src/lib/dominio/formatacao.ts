@@ -89,3 +89,46 @@ export function calcularIdade(dataNascimento: string, hoje = new Date()): number
   if (hoje.getMonth() + 1 < m || (hoje.getMonth() + 1 === m && hoje.getDate() < d)) idade--;
   return idade;
 }
+
+const UNIDADES = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+const DEZENAS = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+const CENTENAS = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+
+function ate999(n: number): string {
+  if (n === 100) return "cem";
+  const c = Math.floor(n / 100);
+  const resto = n % 100;
+  const partes = [CENTENAS[c]];
+  if (resto < 20) partes.push(UNIDADES[resto]);
+  else partes.push([DEZENAS[Math.floor(resto / 10)], UNIDADES[resto % 10]].filter(Boolean).join(" e "));
+  return partes.filter(Boolean).join(" e ");
+}
+
+function inteiroPorExtenso(n: number): string {
+  if (n === 0) return "zero";
+  const milhoes = Math.floor(n / 1_000_000);
+  const milhares = Math.floor((n % 1_000_000) / 1000);
+  const resto = n % 1000;
+  const partes: string[] = [];
+  if (milhoes) partes.push(milhoes === 1 ? "um milhão" : `${ate999(milhoes)} milhões`);
+  if (milhares) partes.push(milhares === 1 ? "mil" : `${ate999(milhares)} mil`);
+  if (resto) partes.push(ate999(resto));
+  // "e" antes do último grupo quando ele é < 100 ou uma centena exata (ex.: "mil e cem", "dois mil e cinquenta").
+  if (partes.length > 1 && (resto < 100 || resto % 100 === 0)) {
+    const ultimo = partes.pop()!;
+    return `${partes.join(", ")} e ${ultimo}`;
+  }
+  return partes.join(", ");
+}
+
+/** 1234.5 -> "mil, duzentos e trinta e quatro reais e cinquenta centavos" (para recibos). */
+export function valorPorExtenso(valor: number): string {
+  const centavosTotais = Math.round(valor * 100);
+  const reais = Math.floor(centavosTotais / 100);
+  const centavos = centavosTotais % 100;
+  const partes: string[] = [];
+  // "um milhão de reais", "dois milhões de reais"
+  if (reais) partes.push(`${inteiroPorExtenso(reais)} ${reais % 1_000_000 === 0 ? "de " : ""}${reais === 1 ? "real" : "reais"}`);
+  if (centavos) partes.push(`${inteiroPorExtenso(centavos)} ${centavos === 1 ? "centavo" : "centavos"}`);
+  return partes.join(" e ") || "zero reais";
+}

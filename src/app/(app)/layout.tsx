@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { IconeSair } from "@/components/icones";
 import { Logo } from "@/components/logo";
 import { Avatar } from "@/components/ui";
+import { diasRestantesTeste, podeEscrever, type DadosAssinatura } from "@/lib/dominio/assinatura";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 import { sair } from "./acoes";
 import { NavegacaoInferior, NavegacaoLateral } from "./navegacao";
@@ -14,8 +15,17 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: perfil } = await supabase.from("profissionais").select("nome").eq("id", user.id).maybeSingle();
+  const { data: perfil } = await supabase
+    .from("profissionais")
+    .select("nome, assinatura_status, teste_ate")
+    .eq("id", user.id)
+    .maybeSingle();
   if (!perfil) redirect("/cadastro");
+  const assinatura = perfil as DadosAssinatura & { nome: string };
+  const somenteLeitura = !podeEscrever(assinatura);
+  // Aviso do teste só na reta final, para não incomodar no começo.
+  const diasTeste = assinatura.assinatura_status === "teste" ? diasRestantesTeste(assinatura) : null;
+  const avisarTeste = diasTeste !== null && diasTeste <= 7;
 
   return (
     <div className="min-h-screen lg:flex">
@@ -56,7 +66,33 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       </header>
       <NavegacaoInferior />
 
-      <main className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12">{children}</main>
+      <main className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12">
+        {somenteLeitura ? (
+          <Link
+            href="/assinatura"
+            className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            <span>
+              <strong>Modo somente leitura.</strong> Sua assinatura não está ativa: você vê e exporta seus dados, mas não
+              cria nem altera.
+            </span>
+            <span className="shrink-0 font-semibold">Assinar →</span>
+          </Link>
+        ) : (
+          avisarTeste && (
+            <Link
+              href="/assinatura"
+              className="mb-6 flex items-center justify-between gap-3 rounded-xl bg-marca-fundo px-4 py-2.5 text-sm text-marca-escura ring-1 ring-marca/15"
+            >
+              <span>
+                Teste grátis: {diasTeste} {diasTeste === 1 ? "dia restante" : "dias restantes"}.
+              </span>
+              <span className="shrink-0 font-semibold">Ver planos →</span>
+            </Link>
+          )
+        )}
+        {children}
+      </main>
     </div>
   );
 }

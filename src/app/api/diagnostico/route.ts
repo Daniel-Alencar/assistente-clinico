@@ -3,6 +3,7 @@ import { z } from "zod";
 import { gerarAnaliseDiagnostica } from "@/lib/ia/diagnostico";
 import { respostaErroIa } from "@/lib/ia/erros-http";
 import type { Mensagem } from "@/lib/ia/tipos";
+import { bloqueioDeEscrita, registrarAcesso, registrarUsoIa, verificarLimiteIa } from "@/lib/servidor";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 
 const Entrada = z.object({
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ erro: "Não autenticado" }, { status: 401 });
+
+  const bloqueio = (await bloqueioDeEscrita(supabase, user.id)) ?? (await verificarLimiteIa(supabase, user.id));
+  if (bloqueio) return NextResponse.json({ erro: bloqueio }, { status: 403 });
 
   const entrada = Entrada.safeParse(await req.json());
   if (!entrada.success) {
@@ -112,6 +116,14 @@ export async function POST(req: NextRequest) {
           .single();
     if (error) throw error;
 
+    await registrarUsoIa(supabase, user.id, "diagnostico");
+    await registrarAcesso(supabase, {
+      profissionalId: user.id,
+      pacienteId,
+      recurso: "analise_diagnostica",
+      recursoId: data.id,
+      acao: analiseId ? "editar" : "criar",
+    });
     return NextResponse.json({ analiseId: data.id, resultado, mensagens });
   } catch (erro) {
     return respostaErroIa(erro, "gerar a análise");

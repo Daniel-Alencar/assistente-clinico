@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconeAgenda, IconeEvolucao, IconePacientes, IconePerfil } from "@/components/icones";
+import { IconeAgenda, IconeDinheiro, IconeEvolucao, IconePacientes, IconePerfil } from "@/components/icones";
 
 const ITENS = [
   { href: "/agenda", rotulo: "Agenda", curto: "Agenda", icone: IconeAgenda },
   { href: "/pacientes", rotulo: "Pacientes", curto: "Pacientes", icone: IconePacientes },
   { href: "/evolucoes/nova", rotulo: "Nova evolução", curto: "Evolução", icone: IconeEvolucao },
+  { href: "/financeiro", rotulo: "Financeiro", curto: "Financeiro", icone: IconeDinheiro },
   { href: "/perfil", rotulo: "Perfil", curto: "Perfil", icone: IconePerfil },
 ];
 
@@ -42,7 +43,7 @@ export function NavegacaoLateral() {
 export function NavegacaoInferior() {
   const ativo = useAtivo();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       {ITENS.map(({ href, curto, icone: Icone }) => (
         <Link
           key={href}

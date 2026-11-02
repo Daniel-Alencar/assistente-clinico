@@ -17,24 +17,31 @@ SaaS para psicólogos e médicos autônomos: **agenda com lembretes no WhatsApp*
 
 ```
 src/
+  proxy.ts                 renova a sessão do Supabase a cada requisição
   app/
-    (app)/                 telas autenticadas: agenda, pacientes, nova evolução
+    (app)/                 área logada
+      agenda/              agenda, nova consulta, cobrar via Pix
+      consultas/[id]/      remarcar, excluir, cancelar série
+      pacientes/           lista com busca, novo, importar CSV, [id] (detalhe, editar, diagnóstico)
+      evolucoes/           nova (ditado → IA) e [id] (revisar, travar, imprimir)
+      financeiro/          cobranças do mês, marcar como paga, relatório CSV
+      assinatura/          plano da plataforma (Mercado Pago)
+      perfil/              dados, chave Pix, exportação de dados
+      acoes*.ts            server actions
+    recibos/[id]/          recibo para imprimir/PDF
+    termos/, privacidade/  documentos legais (modelos)
     api/
-      cron/lembretes       envia lembretes das próximas 24h (de hora em hora)
-      evolucoes            ditado -> evolução estruturada (IA)
-      cobrancas            cria Pix de uma consulta e envia ao paciente
-      webhooks/whatsapp    Meta Cloud API: confirmações/cancelamentos
-      webhooks/evolution   Evolution API (apenas protótipo)
-      webhooks/mercadopago confirmação de pagamento
-    auth/callback          retorno do link mágico
-    login/
+      cron/lembretes       lembretes das próximas 24h
+      evolucoes, diagnostico, cobrancas
+      exportar/            dados (CSV) e carnê-leão
+      webhooks/            whatsapp, evolution, mercadopago (assinaturas)
   lib/
-    mensageria/            interface ProvedorWhatsApp + implementações
-    pagamentos/            Mercado Pago (Pix + validação de webhook)
-    ia/                    geração de evolução (Claude) e transcrição (futuro)
-    dominio/               regras de negócio: lembretes, respostas, cobranças
-    supabase/              clientes servidor / navegador / admin
-supabase/migrations/       schema do banco com RLS
+    dominio/               regras puras e testadas (pix, csv, intencao, assinatura, formatacao) + lembretes, respostas, cobrancas
+    ia/                    camada de IA (Gemini ou Claude), evolução e diagnóstico
+    mensageria/            WhatsApp (console, evolution, meta)
+    pagamentos/            Mercado Pago (assinaturas)
+    servidor.ts            sessão, modo somente leitura, log de acesso, limite de IA
+supabase/migrations/       schema, RLS e travas (assinatura, evolução revisada)
 ```
 
 Regra de ouro: **regra de negócio só fala com `obterProvedorWhatsApp()`**, nunca com um provedor específico. Trocar Evolution por Meta é só mudar `WHATSAPP_PROVIDER`.
@@ -58,14 +65,20 @@ Com `WHATSAPP_PROVIDER=console`, as mensagens aparecem só no terminal, sem prec
 | `lembrete_consulta` | Olá, {{1}}! Lembrete da sua consulta com {{2}} {{3}} às {{4}}. Botões: *Confirmar* / *Cancelar* |
 | `cobranca_sessao` | Olá, {{1}}! Segue o Pix da sessão ({{2}}). Copia e cola: {{3}} |
 | `pagamento_recebido` | Pagamento de {{2}} recebido. Obrigado, {{1}}! |
+| `aviso_profissional` | Olá, {{1}}! Mensagem de {{2}} que não foi respondida automaticamente: {{3}} |
 
 Webhook na Meta: `<APP_URL>/api/webhooks/whatsapp` com o `META_WEBHOOK_VERIFY_TOKEN`.
 
 > A Evolution API (modo QR Code) é não oficial: use só para protótipo e com volume baixo.
 
-## Mercado Pago
+## Dinheiro: dois fluxos separados
 
-Em *Suas integrações > Webhooks*, cadastre `<APP_URL>/api/webhooks/mercadopago` para o evento **Pagamentos** e copie a assinatura secreta para `MERCADOPAGO_WEBHOOK_SECRET`.
+| Fluxo | Quem paga → quem recebe | Como |
+|---|---|---|
+| **Assinatura da plataforma** | Profissional → dono do SaaS | Mercado Pago Assinaturas (`/assinatura`), 14 dias de teste. Sem assinatura válida o app fica **somente leitura** (dados sempre acessíveis e exportáveis). |
+| **Cobrança das sessões** | Paciente → profissional | Pix "copia e cola" gerado com a **chave Pix do próprio profissional** (cadastrada no Perfil). A plataforma não intermedeia; o profissional confirma o pagamento em **Financeiro** e emite o recibo. |
+
+Webhook do Mercado Pago (só assinaturas): cadastre `<APP_URL>/api/webhooks/mercadopago` para o evento **Planos e assinaturas** e copie a assinatura secreta para `MERCADOPAGO_WEBHOOK_SECRET`.
 
 ## LGPD e cuidados clínicos
 
@@ -83,11 +96,15 @@ Na página do paciente, **Apoio ao diagnóstico** abre um agente de IA: o profis
 - A IA recebe idade e (opcionalmente) as últimas evoluções, **nunca nome ou documentos**.
 - **Antes de comercializar:** verificar com especialista se o recurso se enquadra como software dispositivo médico (ANVISA, RDC 657/2022).
 
-## Roadmap do MVP
+## Testes
 
-1. [x] Estrutura, schema, camada de mensageria, IA e Pix
-2. [x] Cadastro do profissional, pacientes e consultas (com repetição semanal e checagem de conflito)
-3. [ ] Salvar/editar evolução revisada e histórico por paciente
-4. [ ] Tela de cobranças e botão "Cobrar sessão"
-5. [ ] Recibo em PDF / exportação para carnê-leão
-6. [ ] Onboarding do profissional e assinatura do SaaS (Mercado Pago assinaturas)
+```bash
+npm test        # regras puras: fuso horário, telefone, valores por extenso, Pix, respostas do WhatsApp, CSV, assinatura
+npm run typecheck
+```
+
+A CI (`.github/workflows/ci.yml`) roda tipagem, testes e build a cada push.
+
+## Pendências
+
+Veja [PENDENCIAS.md](PENDENCIAS.md).

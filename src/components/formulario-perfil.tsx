@@ -13,6 +13,9 @@ export type Perfil = {
   telefone: string | null;
   valor_sessao_padrao: number | null;
   fuso_horario: string;
+  cpf: string | null;
+  tipo_chave_pix: string | null;
+  chave_pix: string | null;
 };
 
 const FUSOS: [string, string][] = [
@@ -34,7 +37,7 @@ export function FormularioPerfil({ perfil, destino }: { perfil?: Perfil; destino
   const [estado, acao, pendente] = useActionState(salvarPerfil.bind(null, destino), {});
 
   return (
-    <form action={acao} className="flex max-w-lg flex-col gap-4">
+    <form action={acao} className="flex flex-col gap-4">
       <label className={rotulo}>
         Nome (como aparece para os pacientes)
         <input name="nome" required defaultValue={perfil?.nome} className={campo} />
@@ -85,6 +88,52 @@ export function FormularioPerfil({ perfil, destino }: { perfil?: Perfil; destino
           ))}
         </select>
       </label>
+      <fieldset className="flex flex-col gap-3 rounded-xl border border-stone-200 p-4">
+        <legend className="px-1 text-sm font-semibold text-stone-900">Recebimento das sessões</legend>
+        <p className="-mt-1 text-sm text-stone-500">
+          O Pix das cobranças é gerado com a sua chave: o dinheiro cai direto na sua conta.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+          <label className={rotulo}>
+            Tipo de chave
+            <select name="tipo_chave_pix" defaultValue={perfil?.tipo_chave_pix ?? "cpf_cnpj"} className={campo}>
+              <option value="cpf_cnpj">CPF/CNPJ</option>
+              <option value="celular">Celular</option>
+              <option value="email">E-mail</option>
+              <option value="aleatoria">Aleatória</option>
+            </select>
+          </label>
+          <label className={rotulo}>
+            Chave Pix
+            <input name="chave_pix" defaultValue={perfil?.chave_pix ?? ""} className={campo} />
+          </label>
+        </div>
+        <label className={rotulo}>
+          Seu CPF <span className="font-normal text-stone-500">(aparece nos recibos)</span>
+          <input
+            name="cpf"
+            inputMode="numeric"
+            defaultValue={perfil?.cpf ? perfil.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : ""}
+            className={campo}
+          />
+        </label>
+      </fieldset>
+      {destino && (
+        <label className="flex items-start gap-2 text-sm text-stone-700">
+          <input type="checkbox" name="aceite_termos" required className="mt-1" />
+          <span>
+            Li e aceito os{" "}
+            <a href="/termos" target="_blank" className="font-medium text-marca underline">
+              Termos de Uso
+            </a>{" "}
+            e a{" "}
+            <a href="/privacidade" target="_blank" className="font-medium text-marca underline">
+              Política de Privacidade
+            </a>
+            , incluindo o tratamento de dados de saúde dos meus pacientes como operador.
+          </span>
+        </label>
+      )}
       <button disabled={pendente} className={botaoPrimario}>
         {pendente ? "Salvando..." : destino ? "Continuar" : "Salvar"}
       </button>

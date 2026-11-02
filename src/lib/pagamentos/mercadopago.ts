@@ -1,52 +1,43 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { MercadoPagoConfig, Payment } from "mercadopago";
+import { MercadoPagoConfig, PreApproval } from "mercadopago";
+import { PRECO_MENSAL } from "@/lib/dominio/assinatura";
 import { exigirEnv } from "@/lib/env";
 
-function clientePagamentos() {
-  return new Payment(new MercadoPagoConfig({ accessToken: exigirEnv("MERCADOPAGO_ACCESS_TOKEN") }));
+// Mercado Pago é usado só para a ASSINATURA DA PLATAFORMA (o profissional paga o SaaS),
+// por isso há um único access token: o do dono do Assistente Clínico.
+// A cobrança das sessões (paciente -> profissional) usa a chave Pix do profissional; ver dominio/cobrancas.ts.
+
+function assinaturas() {
+  return new PreApproval(new MercadoPagoConfig({ accessToken: exigirEnv("MERCADOPAGO_ACCESS_TOKEN") }));
 }
 
-export type CobrancaPix = {
-  mpPaymentId: string;
-  copiaECola: string | null;
-  qrBase64: string | null;
-  linkPagamento: string | null;
-};
-
-export async function criarCobrancaPix(params: {
-  cobrancaId: string; // vira external_reference, usado para conciliar no webhook
-  valor: number;
-  descricao: string;
-  emailPagador: string;
-  expiraEmHoras?: number;
-}): Promise<CobrancaPix> {
-  const expiracao = new Date(Date.now() + (params.expiraEmHoras ?? 72) * 3_600_000);
-
-  const pagamento = await clientePagamentos().create({
+/** Cria a assinatura mensal e devolve o link de checkout do Mercado Pago. */
+export async function criarAssinatura(params: { profissionalId: string; email: string }): Promise<string> {
+  const assinatura = await assinaturas().create({
     body: {
-      transaction_amount: params.valor,
-      description: params.descricao,
-      payment_method_id: "pix",
-      payer: { email: params.emailPagador },
-      external_reference: params.cobrancaId,
-      date_of_expiration: expiracao.toISOString(),
-      notification_url: `${exigirEnv("NEXT_PUBLIC_APP_URL")}/api/webhooks/mercadopago`,
+      reason: "Assistente Clínico — plano mensal",
+      external_reference: params.profissionalId,
+      payer_email: params.email,
+      back_url: `${exigirEnv("NEXT_PUBLIC_APP_URL")}/assinatura`,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: "months",
+        transaction_amount: PRECO_MENSAL,
+        currency_id: "BRL",
+      },
     },
-    requestOptions: { idempotencyKey: params.cobrancaId },
   });
-
-  const dadosPix = pagamento.point_of_interaction?.transaction_data;
-  return {
-    mpPaymentId: String(pagamento.id),
-    copiaECola: dadosPix?.qr_code ?? null,
-    qrBase64: dadosPix?.qr_code_base64 ?? null,
-    linkPagamento: dadosPix?.ticket_url ?? null,
-  };
+  if (!assinatura.init_point) throw new Error("Mercado Pago não retornou o link da assinatura.");
+  return assinatura.init_point;
 }
 
-export function buscarPagamento(id: string) {
-  return clientePagamentos().get({ id });
+export function buscarAssinatura(id: string) {
+  return assinaturas().get({ id });
+}
+
+export function cancelarAssinaturaMercadoPago(id: string) {
+  return assinaturas().update({ id, body: { status: "cancelled" } });
 }
 
 /**
@@ -67,9 +58,7 @@ export function assinaturaMercadoPagoValida(params: {
   if (!ts || !v1) return false;
 
   const manifesto = `id:${params.dataId.toLowerCase()};request-id:${params.requestId};ts:${ts};`;
-  const esperado = createHmac("sha256", exigirEnv("MERCADOPAGO_WEBHOOK_SECRET"))
-    .update(manifesto)
-    .digest("hex");
+  const esperado = createHmac("sha256", exigirEnv("MERCADOPAGO_WEBHOOK_SECRET")).update(manifesto).digest("hex");
 
   return esperado.length === v1.length && timingSafeEqual(Buffer.from(esperado), Buffer.from(v1));
 }

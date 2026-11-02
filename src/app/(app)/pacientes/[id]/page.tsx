@@ -115,7 +115,8 @@ export default async function DetalhePaciente({ params }: Props) {
                 {evolucoes.map((e) => {
                   const c = e.conteudo as ConteudoEvolucao;
                   return (
-                    <li key={e.id} className="flex flex-col gap-2 px-5 py-4">
+                    <li key={e.id}>
+                      <Link href={`/evolucoes/${e.id}`} className="flex flex-col gap-2 px-5 py-4 transition hover:bg-stone-50">
                       <div className="flex items-center gap-2 text-sm">
                         <span className="font-medium text-stone-900">{dataCurta(e.criado_em)}</span>
                         {e.revisada ? <Selo tom="verde">Revisada</Selo> : <Selo tom="ambar">Rascunho</Selo>}
@@ -131,6 +132,7 @@ export default async function DetalhePaciente({ params }: Props) {
                           ))}
                         </div>
                       )}
+                      </Link>
                     </li>
                   );
                 })}

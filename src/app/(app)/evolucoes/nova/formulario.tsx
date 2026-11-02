@@ -1,10 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { botaoPrimario, campo, cartao, rotulo } from "@/components/estilos";
 import { IconeIA } from "@/components/icones";
-import { Selo } from "@/components/ui";
-import type { Evolucao } from "@/lib/ia/esquemas";
 
 type Props = {
   pacientes: { id: string; nome: string }[];
@@ -19,7 +18,7 @@ export function FormularioEvolucao({ pacientes, pacienteInicial, consultaId }: P
   const [transcricao, setTranscricao] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [evolucao, setEvolucao] = useState<Evolucao | null>(null);
+  const router = useRouter();
 
   async function gerar(evento: React.FormEvent) {
     evento.preventDefault();
@@ -38,7 +37,8 @@ export function FormularioEvolucao({ pacientes, pacienteInicial, consultaId }: P
     const dados = await resposta.json();
     setCarregando(false);
     if (!resposta.ok) return setErro(dados.erro ?? "Erro ao gerar evolução");
-    setEvolucao(dados.conteudo);
+    // A evolução já foi salva como rascunho: segue para a revisão.
+    router.push(`/evolucoes/${dados.id}`);
   }
 
   return (
@@ -75,61 +75,18 @@ export function FormularioEvolucao({ pacientes, pacienteInicial, consultaId }: P
       </form>
 
       <div className="lg:col-span-3">
-        {evolucao ? (
-          <article className={`${cartao} flex flex-col gap-5 p-5 sm:p-6`}>
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold">Evolução gerada</h2>
-              <Selo tom="ambar">Rascunho · revise antes de usar</Selo>
-            </div>
-            {evolucao.alertas.length > 0 && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
-                <p className="font-semibold">Alertas de risco</p>
-                <ul className="mt-1 list-disc pl-5">
-                  {evolucao.alertas.map((a) => (
-                    <li key={a}>{a}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-stone-800">{evolucao.resumo}</p>
-            <Campo titulo="Temas abordados" valor={evolucao.temas_abordados.join(", ")} />
-            <Campo titulo="Intervenções" valor={evolucao.intervencoes.join(", ")} />
-            <Campo titulo="Observações clínicas" valor={evolucao.observacoes_clinicas} />
-            <Campo titulo="Plano para a próxima sessão" valor={evolucao.plano_proxima_sessao} />
-            {evolucao.pontos_a_confirmar.length > 0 && (
-              <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
-                <p className="font-semibold">Revise antes de salvar</p>
-                <ul className="mt-1 list-disc pl-5">
-                  {evolucao.pontos_a_confirmar.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </article>
-        ) : (
-          <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-stone-300 p-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-marca-fundo text-marca">
-              <IconeIA className="size-6" />
-            </span>
-            <p className="max-w-xs text-sm text-stone-500">
-              {carregando
-                ? "Organizando o ditado em uma evolução estruturada..."
-                : "A evolução estruturada aparece aqui: resumo, temas, intervenções, plano e alertas de risco."}
-            </p>
-          </div>
-        )}
+        <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-stone-300 p-8 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-marca-fundo text-marca">
+            <IconeIA className="size-6" />
+          </span>
+          <p className="max-w-xs text-sm text-stone-500">
+            {carregando
+              ? "Organizando o ditado em uma evolução estruturada..."
+              : "Depois de gerar, você revisa e ajusta cada campo antes de salvar no prontuário."}
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-function Campo({ titulo, valor }: { titulo: string; valor: string }) {
-  if (!valor) return null;
-  return (
-    <div>
-      <h3 className="text-xs font-semibold tracking-wide text-stone-500 uppercase">{titulo}</h3>
-      <p className="mt-1 text-stone-800">{valor}</p>
-    </div>
-  );
-}

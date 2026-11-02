@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { obterProvedorWhatsApp } from "@/lib/mensageria";
+import { podeEscrever, type DadosAssinatura } from "./assinatura";
 import { formatarDataHora, primeiroNome } from "./formatacao";
 
 type ConsultaParaLembrete = {
@@ -9,7 +10,7 @@ type ConsultaParaLembrete = {
   profissional_id: string;
   paciente_id: string;
   paciente: { nome: string; telefone_whatsapp: string | null; aceita_whatsapp: boolean };
-  profissional: { nome: string; fuso_horario: string };
+  profissional: DadosAssinatura & { nome: string; fuso_horario: string };
 };
 
 /** Envia lembrete para consultas nas próximas 24h que ainda não receberam. Idempotente. */
@@ -20,7 +21,7 @@ export async function enviarLembretesPendentes(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from("consultas")
     .select(
-      "id, inicio, profissional_id, paciente_id, paciente:pacientes!inner(nome, telefone_whatsapp, aceita_whatsapp), profissional:profissionais!inner(nome, fuso_horario)",
+      "id, inicio, profissional_id, paciente_id, paciente:pacientes!inner(nome, telefone_whatsapp, aceita_whatsapp), profissional:profissionais!inner(nome, fuso_horario, assinatura_status, teste_ate)",
     )
     .eq("status", "agendada")
     .is("lembrete_enviado_em", null)
@@ -34,7 +35,8 @@ export async function enviarLembretesPendentes(supabase: SupabaseClient) {
 
   for (const consulta of (data ?? []) as unknown as ConsultaParaLembrete[]) {
     const { paciente, profissional } = consulta;
-    if (!paciente.aceita_whatsapp || !paciente.telefone_whatsapp) {
+    // Sem consentimento ou sem assinatura válida do profissional: não envia.
+    if (!paciente.aceita_whatsapp || !paciente.telefone_whatsapp || !podeEscrever(profissional)) {
       resultado.ignorados++;
       continue;
     }

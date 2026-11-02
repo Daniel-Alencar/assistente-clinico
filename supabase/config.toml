@@ -245,6 +245,12 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Login por link mágico em português. O plano gratuito do Supabase não permite editar templates:
+# descomente depois de configurar o SMTP próprio (PENDENCIAS.md, item 2) e rode `npx supabase config push`.
+# [auth.email.template.magic_link]
+# subject = "Seu link de acesso ao Assistente Clínico"
+# content_path = "./supabase/templates/link-magico.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
