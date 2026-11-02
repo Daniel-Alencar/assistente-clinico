@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --color-marca: #0f766e;
+  --color-marca-escura: #115e59;
+  --color-marca-clara: #ccfbf1;
+  --color-marca-fundo: #f0fdfa;
+}
+
+@layer base {
+  body {
+    @apply bg-stone-50 text-stone-900 antialiased;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply transition focus:border-marca focus:ring-4 focus:ring-marca/15 focus:outline-none;
+  }
+
+  ::selection {
+    @apply bg-marca-clara;
+  }
+}
