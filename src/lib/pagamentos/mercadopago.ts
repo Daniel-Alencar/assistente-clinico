@@ -1,6 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { MercadoPagoConfig, PreApproval } from "mercadopago";
+import { Invoice, MercadoPagoConfig, PreApproval } from "mercadopago";
 import { PRECO_MENSAL } from "@/lib/dominio/assinatura";
 import { exigirEnv } from "@/lib/env";
 
@@ -8,8 +8,10 @@ import { exigirEnv } from "@/lib/env";
 // por isso há um único access token: o do dono do Assistente Clínico.
 // A cobrança das sessões (paciente -> profissional) usa a chave Pix do profissional; ver dominio/cobrancas.ts.
 
+const configuracao = () => new MercadoPagoConfig({ accessToken: exigirEnv("MERCADOPAGO_ACCESS_TOKEN") });
+
 function assinaturas() {
-  return new PreApproval(new MercadoPagoConfig({ accessToken: exigirEnv("MERCADOPAGO_ACCESS_TOKEN") }));
+  return new PreApproval(configuracao());
 }
 
 /** Cria a assinatura mensal e devolve o link de checkout do Mercado Pago. */
@@ -19,6 +21,7 @@ export async function criarAssinatura(params: { profissionalId: string; email: s
       reason: "Assistente Clínico — plano mensal",
       external_reference: params.profissionalId,
       payer_email: params.email,
+      status: "pending", // o próprio profissional escolhe o cartão no checkout
       back_url: `${exigirEnv("NEXT_PUBLIC_APP_URL")}/assinatura`,
       auto_recurring: {
         frequency: 1,
@@ -34,6 +37,11 @@ export async function criarAssinatura(params: { profissionalId: string; email: s
 
 export function buscarAssinatura(id: string) {
   return assinaturas().get({ id });
+}
+
+/** Cobrança mensal de uma assinatura ("authorized payment" na API). */
+export function buscarFatura(id: string) {
+  return new Invoice(configuracao()).get({ id });
 }
 
 export function cancelarAssinaturaMercadoPago(id: string) {

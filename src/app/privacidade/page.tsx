@@ -25,7 +25,7 @@ export default function Privacidade() {
       </p>
       <h2>4. Suboperadores</h2>
       <p>
-        Hospedagem e banco de dados (Supabase, Vercel), provedores de IA, Meta (WhatsApp) e Mercado Pago (assinatura da
+        Hospedagem e banco de dados (Supabase, Vercel), provedores de IA, Meta (WhatsApp), Resend (e-mail) e Mercado Pago (assinatura da
         plataforma). A lista atualizada é disponibilizada mediante solicitação.
       </p>
       <h2>5. Segurança</h2>

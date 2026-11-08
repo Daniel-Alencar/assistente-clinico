@@ -8,6 +8,15 @@ const nextConfig: NextConfig = {
         source: "/(agenda|pacientes|evolucoes)(.*)",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
+      {
+        // Recibo aberto pelo paciente: o link é a credencial, então não pode vazar nem ser indexado.
+        source: "/r/:token*",
+        headers: [
+          { key: "Cache-Control", value: "no-store" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex" },
+        ],
+      },
     ];
   },
 };

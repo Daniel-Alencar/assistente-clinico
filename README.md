@@ -7,7 +7,7 @@ SaaS para psicólogos e médicos autônomos: **agenda com lembretes no WhatsApp*
 | Camada | Escolha |
 |---|---|
 | App | Next.js 16 (App Router) + React 19 + Tailwind 4 |
-| Banco / Auth | Supabase (Postgres + RLS + login por link mágico), região São Paulo |
+| Banco / Auth | Supabase (Postgres + RLS + login com e-mail e senha), região São Paulo |
 | IA | Camada com 2 provedores via `IA_PROVIDER`: Claude (`claude-opus-5-5`) ou Gemini (`gemini-3.5-flash`, com modelos reserva), ambos com saída estruturada validada por Zod |
 | WhatsApp | Camada própria com 3 provedores: `console` (dev), `evolution` (protótipo), `meta` (produção) |
 | Pagamentos | Mercado Pago (Pix) |
@@ -29,6 +29,7 @@ src/
       perfil/              dados, chave Pix, exportação de dados
       acoes*.ts            server actions
     recibos/[id]/          recibo para imprimir/PDF
+    r/[token]/             recibo aberto pelo paciente (link assinado, sem login)
     termos/, privacidade/  documentos legais (modelos)
     api/
       cron/lembretes       lembretes das próximas 24h
@@ -66,6 +67,7 @@ Com `WHATSAPP_PROVIDER=console`, as mensagens aparecem só no terminal, sem prec
 | `cobranca_sessao` | Olá, {{1}}! Segue o Pix da sessão ({{2}}). Copia e cola: {{3}} |
 | `pagamento_recebido` | Pagamento de {{2}} recebido. Obrigado, {{1}}! |
 | `aviso_profissional` | Olá, {{1}}! Mensagem de {{2}} que não foi respondida automaticamente: {{3}} |
+| `recibo_sessao` | Olá, {{1}}! Seu recibo de {{2}} está disponível em {{3}} e pode ser salvo em PDF. O link vale por 30 dias. |
 
 Webhook na Meta: `<APP_URL>/api/webhooks/whatsapp` com o `META_WEBHOOK_VERIFY_TOKEN`.
 
@@ -78,11 +80,11 @@ Webhook na Meta: `<APP_URL>/api/webhooks/whatsapp` com o `META_WEBHOOK_VERIFY_TO
 | **Assinatura da plataforma** | Profissional → dono do SaaS | Mercado Pago Assinaturas (`/assinatura`), 14 dias de teste. Sem assinatura válida o app fica **somente leitura** (dados sempre acessíveis e exportáveis). |
 | **Cobrança das sessões** | Paciente → profissional | Pix "copia e cola" gerado com a **chave Pix do próprio profissional** (cadastrada no Perfil). A plataforma não intermedeia; o profissional confirma o pagamento em **Financeiro** e emite o recibo. |
 
-Webhook do Mercado Pago (só assinaturas): cadastre `<APP_URL>/api/webhooks/mercadopago` para o evento **Planos e assinaturas** e copie a assinatura secreta para `MERCADOPAGO_WEBHOOK_SECRET`.
+Webhook do Mercado Pago (só assinaturas): cadastre `<APP_URL>/api/webhooks/mercadopago` para os eventos de **assinatura e pagamento recorrente** e copie a assinatura secreta para `MERCADOPAGO_WEBHOOK_SECRET`.
 
 ## LGPD e cuidados clínicos
 
-- Dados de saúde são **dados sensíveis**: RLS isola cada profissional; a service role só é usada em webhooks/cron.
+- Dados de saúde são **dados sensíveis**: RLS isola cada profissional; a service role só é usada em webhooks, cron e no link assinado do recibo.
 - WhatsApp só é enviado para pacientes com `aceita_whatsapp = true` (consentimento registrado).
 - **Camada gratuita do Gemini só com dados fictícios:** nela o Google pode usar o conteúdo enviado para treinar modelos. Com pacientes reais, use camada paga (Gemini pago ou Anthropic).
 - A IA recebe **o ditado do profissional, não a gravação da sessão**, e é instruída a não inventar informações.

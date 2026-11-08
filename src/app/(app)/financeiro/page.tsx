@@ -6,6 +6,7 @@ import { Menu } from "@/components/menu";
 import { Avatar, CabecalhoPagina, Indicador, Selo, Vazio, type Tom } from "@/components/ui";
 import { formatarMoeda, horarioLocalParaUtc, utcParaHorarioLocal } from "@/lib/dominio/formatacao";
 import { usuarioAtual } from "@/lib/servidor";
+import { AcoesRecibo } from "./acoes-recibo";
 
 type Props = { searchParams: Promise<{ mes?: string }> };
 
@@ -115,7 +116,7 @@ export default async function Financeiro({ searchParams }: Props) {
             {cobrancas.map((c) => {
               const [rotulo, tom] = STATUS[c.status];
               return (
-                <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5 sm:flex-nowrap">
+                <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     {c.paciente && <Avatar nome={c.paciente.nome} tamanho="sm" />}
                     <div className="min-w-0">
@@ -131,9 +132,12 @@ export default async function Financeiro({ searchParams }: Props) {
                     {rotulo}
                   </Selo>
                   {c.status === "paga" && (
-                    <Link href={`/recibos/${c.id}`} target="_blank" className={botaoSecundario}>
-                      Recibo
-                    </Link>
+                    <>
+                      <Link href={`/recibos/${c.id}`} target="_blank" className={botaoSecundario}>
+                        Recibo
+                      </Link>
+                      <AcoesRecibo cobrancaId={c.id} nomePaciente={c.paciente?.nome ?? ""} />
+                    </>
                   )}
                   {c.status === "pendente" && (
                     <Menu rotulo={`Ações da cobrança de ${c.paciente?.nome ?? ""}`}>

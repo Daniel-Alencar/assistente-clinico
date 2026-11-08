@@ -23,12 +23,12 @@ Atualizado em 02/11/2026. Marque `[x]` conforme for concluindo.
 | 7 | Documentos legais | `/termos` e `/privacidade` (**modelos**), links no login e **aceite obrigatório no cadastro**, com data e versão |
 | 8 | Pix na conta do profissional | Chave Pix e CPF no Perfil, Pix "copia e cola" com o valor gerado com a chave dele |
 | 9 | Financeiro | `/financeiro`: cobranças do mês, totais, marcar como paga (Pix, dinheiro, cartão, transferência), reenviar, copiar Pix, cancelar |
-| 10 | Recibos | Recibo com valor por extenso para imprimir ou salvar em PDF, e relatório mensal em CSV para o carnê-leão e o Receita Saúde |
+| 10 | Recibos | Recibo com valor por extenso para imprimir ou salvar em PDF, **envio ao paciente por WhatsApp (link assinado, válido por 30 dias) ou e-mail**, e relatório mensal em CSV para o carnê-leão e o Receita Saúde |
 | 11 | WhatsApp (código) | Paciente responde **SAIR** e é descadastrado; mensagens não reconhecidas vão para o WhatsApp do profissional e aparecem na agenda; consentimento registrado com data e origem; contas sem assinatura não enviam lembretes |
 | 12 | Assinatura do SaaS | `/assinatura`: plano, período de teste, checkout do Mercado Pago, cancelamento, webhook e **modo somente leitura** (nunca bloqueia o acesso aos dados) |
 | 13 | Portabilidade | Exportação em CSV de pacientes, consultas, evoluções, cobranças e análises (Perfil), e **importação de pacientes por planilha** |
 | 14 | LGPD (código) | **Log de acesso a prontuário** (ver, criar, editar, revisar, excluir, exportar); dados nunca são apagados por inadimplência |
-| 15 | Qualidade | **22 testes automatizados** (`npm test`) e CI no GitHub Actions (tipagem, testes, build) |
+| 15 | Qualidade | **28 testes automatizados** (`npm test`) e CI no GitHub Actions (tipagem, testes, build) |
 
 Validação feita em 02/11/2026: build de produção, as 19 telas abertas sem erro e 13 regras conferidas no banco real (travas, Pix, exportações, log e modo somente leitura).
 
@@ -37,16 +37,17 @@ Validação feita em 02/11/2026: build de produção, as 19 telas abertas sem er
 ## 🙋 Suas tarefas: contas, pagamentos e advogado
 
 ### Antes do piloto com um profissional real
-- [ ] **SMTP próprio no Supabase** (Resend, Brevo ou Amazon SES), com domínio verificado. Sem isso, **só você recebe o e-mail de login**: o SMTP padrão só envia para a equipe do projeto. Depois, descomente o template em `supabase/config.toml` (e-mail em português já pronto em `supabase/templates/link-magico.html`) e rode `npx supabase config push`.
+- [ ] **SMTP próprio no Supabase** (Resend, Brevo ou Amazon SES), com domínio verificado. Sem isso, **só a equipe do projeto recebe os e-mails de confirmação de conta e de recuperação de senha**, e quem não confirma não consegue entrar. Depois, descomente os templates em `supabase/config.toml` (e-mails em português já prontos em `supabase/templates/`) e rode `npx supabase config push`.
 - [ ] **IA paga:** trocar o Gemini gratuito pela camada paga (ou Anthropic) antes de dados reais, e **gerar uma chave nova do Gemini**, porque a atual apareceu numa conversa.
-- [ ] **Deploy na Vercel:** variáveis de ambiente, domínio, e `site_url`/`additional_redirect_urls` do Supabase com o domínio de produção (`supabase/config.toml` + `npx supabase config push`).
+- [ ] **Deploy na Vercel:** variáveis de ambiente, domínio, e `site_url`/`additional_redirect_urls` do Supabase com o domínio de produção (`/auth/callback` e `/auth/redefinir`) (`supabase/config.toml` + `npx supabase config push`).
 - [ ] **Cron dos lembretes:** o plano gratuito da Vercel roda cron só 1 vez por dia. Use Vercel Pro, `pg_cron` no Supabase ou cron-job.org chamando `/api/cron/lembretes` com `Authorization: Bearer CRON_SECRET`.
+- [ ] **Recibos ao paciente:** na Vercel, definir `RECIBO_LINK_SECRET` (WhatsApp), `RESEND_API_KEY` e `EMAIL_REMETENTE` (e-mail, com domínio verificado no Resend).
 - [ ] **Backups:** plano Pro do Supabase (o gratuito não tem backup diário).
 - [ ] **Advogado:** revisar `/termos` e `/privacidade`. Ao mudar o texto, atualize `VERSAO_TERMOS` em `src/lib/dominio/termos.ts`.
 
 ### Antes de cobrar dos clientes
-- [ ] **Mercado Pago (assinatura):** criar a aplicação, preencher `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` e `NEXT_PUBLIC_PRECO_MENSAL`, cadastrar o webhook "Planos e assinaturas" e **testar uma assinatura de ponta a ponta** com usuário de teste.
-- [ ] **WhatsApp oficial:** conta Meta Business verificada (exige CNPJ), número dedicado e aprovação dos 4 templates (`lembrete_consulta`, `cobranca_sessao`, `pagamento_recebido`, `aviso_profissional`; textos no README). Depois, testar com número real.
+- [ ] **Mercado Pago (assinatura):** criar a aplicação, preencher `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` e `NEXT_PUBLIC_PRECO_MENSAL`, cadastrar o webhook e **testar uma assinatura de ponta a ponta** com usuário de teste. Passo a passo em `MERCADOPAGO.md`.
+- [ ] **WhatsApp oficial:** conta Meta Business verificada (exige CNPJ), número dedicado e aprovação dos 5 templates (`lembrete_consulta`, `cobranca_sessao`, `pagamento_recebido`, `aviso_profissional`, `recibo_sessao`; textos em `WHATSAPP.md`). Depois, testar com número real.
 - [ ] **LGPD:** contrato de operador (DPA) com os profissionais, lista de suboperadores e Relatório de Impacto (RIPD).
 - [ ] **ANVISA:** validar se o apoio ao diagnóstico se enquadra como software dispositivo médico (RDC 657/2022).
 - [ ] **Médicos:** prontuário eletrônico sem papel exige certificação SBIS/CFM e assinatura ICP-Brasil (Res. CFM 1.821/2007). Recomendação: começar só com psicólogos.
@@ -55,7 +56,6 @@ Validação feita em 02/11/2026: build de produção, as 19 telas abertas sem er
 
 ## 🧑‍💻 O que ainda falta de código
 
-- [ ] Enviar o recibo ao paciente por WhatsApp ou e-mail (hoje o profissional imprime ou salva em PDF e envia).
 - [ ] Monitoramento de erros (Sentry ou similar). Precisa criar a conta.
 - [ ] Testes ponta a ponta com Playwright (login → paciente → consulta → evolução → cobrança).
 - [ ] Gerar os tipos do banco (`npx supabase gen types --linked`) para tirar os `as unknown as` do código.

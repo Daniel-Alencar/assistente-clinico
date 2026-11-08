@@ -45,7 +45,7 @@ export default function Inicio() {
               usar, com tudo incluído no plano.
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <Link href="/login" className={`${botaoPrimario} px-6 py-3 text-base`}>
+              <Link href="/login?modo=criar" className={`${botaoPrimario} px-6 py-3 text-base`}>
                 Começar grátis
               </Link>
               <a href="#recursos" className="font-semibold text-stone-700 hover:text-marca">
@@ -88,7 +88,7 @@ export default function Inicio() {
               ganha na primeira semana.
             </p>
             <Link
-              href="/login"
+              href="/login?modo=criar"
               className="rounded-lg bg-white px-6 py-3 font-semibold text-marca shadow-sm transition hover:bg-marca-fundo"
             >
               Criar minha conta

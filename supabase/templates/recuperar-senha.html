@@ -8,15 +8,15 @@
             <tr>
               <td>
                 <p style="margin:0 0 24px;font-size:18px;font-weight:bold;color:#0f766e">Assistente Clínico</p>
-                <h1 style="margin:0 0 12px;font-size:22px">Seu link de acesso</h1>
+                <h1 style="margin:0 0 12px;font-size:22px">Crie uma nova senha</h1>
                 <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#57534e">
-                  Clique no botão abaixo para entrar. O link vale por 1 hora e só pode ser usado uma vez.
+                  Clique no botão abaixo para criar uma nova senha. O link vale por 1 hora e só pode ser usado uma vez.
                 </p>
-                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px">
-                  Entrar no Assistente Clínico
+                <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px">
+                  Criar nova senha
                 </a>
                 <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#78716c">
-                  Se você não pediu este e-mail, pode ignorá-lo com segurança.
+                  Se você não pediu este e-mail, pode ignorá-lo: sua senha continua a mesma.
                 </p>
               </td>
             </tr>

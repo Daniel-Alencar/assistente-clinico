@@ -31,5 +31,24 @@ export function statusDaAssinaturaMercadoPago(status: string | undefined): Statu
   }
 }
 
+/**
+ * Resultado de uma cobrança mensal -> status interno. O cartão recusado não muda o status da assinatura no
+ * Mercado Pago: depois das novas tentativas, a fatura fica "processed" com pagamento recusado.
+ */
+export function statusPelaCobrancaMensal(fatura: string | undefined, pagamento: string | undefined): StatusAssinatura | null {
+  if (pagamento === "approved") return "ativa";
+  if (fatura === "processed" && pagamento === "rejected") return "inadimplente";
+  return null; // agendada ou ainda em novas tentativas
+}
+
+/** Avisos de um checkout abandonado ou de uma assinatura anterior não podem derrubar a assinatura ativa atual. */
+export function assinaturaAntiga(
+  atual: { assinatura_status: StatusAssinatura; mp_assinatura_id: string | null },
+  preapprovalId: string,
+  novoStatus: StatusAssinatura | null,
+): boolean {
+  return atual.assinatura_status === "ativa" && !!atual.mp_assinatura_id && atual.mp_assinatura_id !== preapprovalId && novoStatus !== "ativa";
+}
+
 export const MENSAGEM_SOMENTE_LEITURA =
   "Sua assinatura não está ativa: o app está em modo somente leitura. Seus dados continuam disponíveis. Regularize em Perfil > Assinatura.";

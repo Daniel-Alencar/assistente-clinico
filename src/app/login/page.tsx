@@ -1,11 +1,7 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
-import { botaoPrimario, campo, rotulo } from "@/components/estilos";
-import { IconeCheck, IconeEmail } from "@/components/icones";
+import { IconeCheck } from "@/components/icones";
 import { Logo } from "@/components/logo";
-import { criarClienteNavegador } from "@/lib/supabase/navegador";
+import { FormularioAcesso } from "./formulario-acesso";
 
 const VANTAGENS = [
   "Lembretes automáticos no WhatsApp",
@@ -13,28 +9,10 @@ const VANTAGENS = [
   "Cobrança via Pix com recibo",
 ];
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [estado, setEstado] = useState<"inicial" | "enviando" | "enviado">("inicial");
-  const [erro, setErro] = useState<string | null>(null);
+type Props = { searchParams: Promise<{ modo?: string; erro?: string }> };
 
-  async function entrar(evento: React.FormEvent) {
-    evento.preventDefault();
-    setEstado("enviando");
-    setErro(null);
-    try {
-      const { error } = await criarClienteNavegador().auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-      });
-      if (error) throw error;
-      setEstado("enviado");
-    } catch (e) {
-      console.error(e);
-      setErro("Não foi possível enviar o link agora. Tente novamente em instantes.");
-      setEstado("inicial");
-    }
-  }
+export default async function Login({ searchParams }: Props) {
+  const { modo, erro } = await searchParams;
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
@@ -68,61 +46,10 @@ export default function Login() {
             <Logo />
           </Link>
 
-          {estado === "enviado" ? (
-            <div className="flex flex-col items-start gap-4">
-              <span className="flex size-12 items-center justify-center rounded-full bg-marca-fundo text-marca">
-                <IconeEmail className="size-6" />
-              </span>
-              <h2 className="text-2xl font-bold tracking-tight">Confira seu e-mail</h2>
-              <p className="text-stone-600">
-                Enviamos um link de acesso para <strong className="text-stone-900">{email}</strong>. Abra
-                no mesmo navegador para entrar.
-              </p>
-              <button onClick={() => setEstado("inicial")} className="text-sm font-medium text-marca hover:underline">
-                Usar outro e-mail
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2">
-                <h2 className="text-2xl font-bold tracking-tight">Entre na sua conta</h2>
-                <p className="text-stone-600">Sem senha: enviamos um link de acesso para o seu e-mail.</p>
-              </div>
-              <form onSubmit={entrar} className="flex flex-col gap-4">
-                <label className={rotulo}>
-                  E-mail
-                  <input
-                    type="email"
-                    required
-                    autoFocus
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="voce@consultorio.com.br"
-                    className={campo}
-                  />
-                </label>
-                <button disabled={estado === "enviando"} className={`${botaoPrimario} w-full`}>
-                  {estado === "enviando" ? "Enviando..." : "Receber link de acesso"}
-                </button>
-                {erro && (
-                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-                    {erro}
-                  </p>
-                )}
-              </form>
-              <p className="text-xs text-stone-500">
-                Ao entrar, você concorda com os{" "}
-                <Link href="/termos" className="underline hover:text-stone-700">
-                  Termos de Uso
-                </Link>{" "}
-                e a{" "}
-                <Link href="/privacidade" className="underline hover:text-stone-700">
-                  Política de Privacidade
-                </Link>
-                .
-              </p>
-            </>
-          )}
+          <FormularioAcesso
+            modoInicial={modo === "criar" ? "criar" : "entrar"}
+            erroInicial={erro === "link" ? "Este link expirou ou foi aberto em outro navegador. Entre com sua senha ou peça um novo link em “Esqueci minha senha”." : null}
+          />
         </div>
       </section>
     </main>

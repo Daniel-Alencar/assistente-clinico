@@ -1,5 +1,5 @@
 import { cancelarAssinatura, assinar } from "@/app/(app)/acoes-assinatura";
-import { botaoPrimario, cartao } from "@/components/estilos";
+import { botaoPrimario, campo, cartao, rotulo as estiloRotulo } from "@/components/estilos";
 import { IconeCheck } from "@/components/icones";
 import { CabecalhoPagina, Selo, type Tom } from "@/components/ui";
 import { diasRestantesTeste, podeEscrever, PRECO_MENSAL, type DadosAssinatura } from "@/lib/dominio/assinatura";
@@ -15,6 +15,11 @@ const ROTULOS: Record<string, [string, Tom]> = {
   ativa: ["Ativa", "verde"],
   inadimplente: ["Pagamento pendente", "ambar"],
   cancelada: ["Cancelada", "neutro"],
+};
+
+const ERROS: Record<string, string> = {
+  email: "Informe um e-mail válido.",
+  cancelar: "Não foi possível cancelar a assinatura agora. Tente novamente em instantes.",
 };
 
 const INCLUSO = [
@@ -57,7 +62,7 @@ export default async function Assinatura({ searchParams }: Props) {
 
       {erro && (
         <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          Não foi possível iniciar a assinatura agora. Tente novamente em instantes.
+          {ERROS[erro] ?? "Não foi possível iniciar a assinatura agora. Tente novamente em instantes."}
         </p>
       )}
 
@@ -109,7 +114,12 @@ export default async function Assinatura({ searchParams }: Props) {
               </form>
             </>
           ) : (
-            <form action={assinar}>
+            <form action={assinar} className="flex flex-col gap-3">
+              <label className={estiloRotulo}>
+                E-mail da sua conta Mercado Pago
+                <input name="email" type="email" required defaultValue={user.email} className={campo} />
+                <span className="font-normal text-stone-500">Precisa ser o e-mail da conta com que você vai pagar.</span>
+              </label>
               <button className={`${botaoPrimario} w-full`}>Assinar com Mercado Pago</button>
             </form>
           )}

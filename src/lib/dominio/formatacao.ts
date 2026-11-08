@@ -19,6 +19,10 @@ export function formatarMoeda(valor: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
 }
 
+export function escaparHtml(texto: string) {
+  return texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export function primeiroNome(nome: string) {
   return nome.trim().split(/\s+/)[0] ?? nome;
 }
