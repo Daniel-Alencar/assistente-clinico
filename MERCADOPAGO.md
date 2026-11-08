@@ -7,7 +7,7 @@ Levantado em 08/11/2026. O painel do Mercado Pago muda de nome e lugar com frequ
 ## O que ter em mãos
 
 - [ ] Conta Mercado Pago que vai receber as assinaturas.
-- [ ] App publicado com HTTPS, com `NEXT_PUBLIC_APP_URL` apontando para o domínio. O teste não funciona em `localhost`: o Mercado Pago precisa alcançar o webhook e voltar para o site.
+- [ ] App publicado com HTTPS, com `NEXT_PUBLIC_APP_URL` apontando para o domínio. O teste não funciona em `localhost`: o Mercado Pago recusa esse endereço de retorno (`Invalid value for back_url`) e precisa alcançar o webhook.
 
 ## 1. Criar a aplicação
 
@@ -16,8 +16,9 @@ Levantado em 08/11/2026. O painel do Mercado Pago muda de nome e lugar com frequ
 
 ## 2. Criar as contas de teste
 
-- [ ] Em **Contas de teste**, crie uma conta **Vendedor** e uma **Comprador**, ambas do Brasil.
-- [ ] Anote o e-mail e a senha do comprador.
+- [ ] Em **Contas de teste**, confira se há uma conta **Vendedor** e uma **Comprador**, ambas do Brasil.
+- [ ] Copie o usuário, a senha e o código de verificação do comprador. O painel mostra o usuário (`TESTUSER...`), não o e-mail.
+- [ ] Numa janela anônima, entre no Mercado Pago como comprador e copie o **e-mail** nos dados da conta. Se não aparecer, o formato é `test_user_<número do usuário>@testuser.com`, usando os dígitos do `TESTUSER...` (não o User ID).
 
 ## 3. Configurar as variáveis na Vercel (modo teste)
 
@@ -38,8 +39,10 @@ O preço vai para o código no build: **depois de mudar, faça um redeploy**.
 
 ## 5. Testar de ponta a ponta
 
-1. Entre no app com uma conta de profissional e abra **Assinatura**.
-2. No campo de e-mail, informe o **e-mail do comprador de teste**.
+O app envia ao Mercado Pago o **e-mail de login** do profissional, então a conta do app precisa usar o e-mail do comprador de teste. Esse endereço não recebe mensagens, por isso crie o usuário direto no Supabase.
+
+1. No Supabase, em **Authentication → Users → Add user**, crie o usuário com o e-mail do comprador de teste, uma senha e **Auto Confirm User** marcado.
+2. Entre no app com esse usuário, complete o cadastro e abra **Assinatura**.
 3. Clique em **Assinar com Mercado Pago** e faça login como comprador de teste, numa janela anônima.
 4. Pague com o cartão de teste abaixo.
 
@@ -58,11 +61,19 @@ Depois confira:
 - [ ] **Cancelar assinatura** deixa o status como **Cancelada**, e o app fica somente leitura, com os dados acessíveis.
 - [ ] Assinar de novo volta a ficar **Ativa**.
 
+Erros comuns ao clicar em **Assinar** (aparecem no log da Vercel):
+
+| Mensagem | Causa |
+|---|---|
+| `Both payer and collector must be real or test users` | O e-mail de login do app é real, mas o token é de teste. Entre no app com o usuário do comprador de teste. |
+| `User bad request` | O e-mail de teste não existe. Confira o número do `TESTUSER...`. |
+| `Invalid value for back_url` | `NEXT_PUBLIC_APP_URL` não é o endereço público do site. |
+
 ## 6. Passar para produção
 
 - [ ] Ative as credenciais de produção da aplicação.
 - [ ] Troque `MERCADOPAGO_ACCESS_TOKEN` pelo de produção e confira a assinatura secreta do modo produção. Faça o redeploy.
-- [ ] Assine uma vez com um cartão real, confira o valor e cancele.
+- [ ] Assine uma vez com um cartão real, confira o valor e cancele. Pague com uma conta Mercado Pago **diferente da que recebe**, entrando no app com o e-mail dessa conta. Se o botão **Confirmar** ficar bloqueado, confira isso primeiro.
 
 ## O que este teste não cobre
 

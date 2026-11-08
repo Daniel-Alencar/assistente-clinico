@@ -1,17 +1,15 @@
 "use server";
 
+import { MPBadRequestError } from "mercadopago";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { cancelarAssinaturaMercadoPago, criarAssinatura } from "@/lib/pagamentos/mercadopago";
 import { sincronizarAssinatura } from "@/lib/dominio/sincronizar-assinatura";
 import { usuarioAtual } from "@/lib/servidor";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 
-export async function assinar(form: FormData) {
+export async function assinar() {
   const { supabase, user } = await usuarioAtual();
-  // O Mercado Pago valida este e-mail no pagamento: pode ser diferente do e-mail de login.
-  const email = String(form.get("email") ?? "").trim().toLowerCase();
-  if (!z.email().safeParse(email).success) redirect("/assinatura?erro=email");
+  if (!user.email) redirect("/assinatura?erro=email");
 
   const { data: atual } = await supabase.from("profissionais").select("assinatura_status, mp_assinatura_id").eq("id", user.id).single();
   if (atual?.assinatura_status === "ativa") redirect("/assinatura");
@@ -20,10 +18,10 @@ export async function assinar(form: FormData) {
   try {
     // Uma assinatura antiga com cartão recusado segue ativa no Mercado Pago e cobraria em dobro.
     if (atual?.mp_assinatura_id) await cancelarAssinaturaMercadoPago(atual.mp_assinatura_id).catch(() => null);
-    link = await criarAssinatura({ profissionalId: user.id, email });
+    link = await criarAssinatura({ profissionalId: user.id, email: user.email });
   } catch (erro) {
     console.error("Falha ao criar assinatura", erro);
-    redirect("/assinatura?erro=mercadopago");
+    redirect(`/assinatura?erro=${erro instanceof MPBadRequestError ? "recusado" : "mercadopago"}`);
   }
   redirect(link);
 }
